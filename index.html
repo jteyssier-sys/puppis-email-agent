@@ -1,0 +1,806 @@
+<!DOCTYPE html>
+<html lang="es">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>Puppis · Agente de Asuntos Email</title>
+<link href="https://fonts.googleapis.com/css2?family=Fredoka+One&family=Nunito:wght@400;600;700;800;900&family=Nunito+Sans:wght@400;500;600;700&display=swap" rel="stylesheet">
+<style>
+:root {
+  --blue:        #1B4F8A;
+  --blue-mid:    #2A6BB5;
+  --blue-light:  #4A90D9;
+  --blue-pale:   #E8F0FA;
+  --blue-pale2:  #D0E2F4;
+  --yellow:      #F5C800;
+  --yellow-light:#FFD740;
+  --yellow-pale: #FFFBDE;
+  --yellow-mid:  #FFE97A;
+  --white:       #FFFFFF;
+  --bg:          #F0F4FA;
+  --surface:     #FFFFFF;
+  --surface2:    #F7F9FD;
+  --border:      #DDE6F2;
+  --border2:     #C8D8EE;
+  --text:        #132A4A;
+  --text-muted:  #5A7A9E;
+  --text-dim:    #A0BAD4;
+  --green:       #2EB87A;
+  --red:         #E84B4B;
+  --r:           16px;
+  --rs:          10px;
+  --shadow:      0 2px 12px rgba(27,79,138,.08);
+  --shadow-md:   0 6px 24px rgba(27,79,138,.14);
+}
+*{box-sizing:border-box;margin:0;padding:0}
+html,body{height:100%;overflow:hidden}
+body{background:var(--bg);color:var(--text);font-family:'Nunito Sans',sans-serif;font-size:14px;line-height:1.6}
+
+/* ── TOPBAR ── */
+.topbar{
+  height:64px;display:flex;align-items:center;justify-content:space-between;
+  padding:0 28px;background:var(--blue);position:relative;z-index:50;
+  box-shadow:0 3px 16px rgba(27,79,138,.3)
+}
+.logo{display:flex;align-items:center;gap:12px}
+.logo-circle{
+  width:40px;height:40px;background:var(--yellow);border-radius:50%;
+  display:flex;align-items:center;justify-content:center;font-size:20px;
+  box-shadow:0 2px 8px rgba(0,0,0,.2)
+}
+.logo-name{font-family:'Fredoka One',cursive;font-size:22px;color:#fff;letter-spacing:.5px}
+.logo-tagline{font-size:10px;color:rgba(255,255,255,.6);font-weight:700;letter-spacing:1px;text-transform:uppercase;margin-left:2px}
+.topbar-right{display:flex;align-items:center;gap:10px}
+.tb-badge{
+  background:var(--yellow);color:var(--blue);
+  padding:5px 14px;border-radius:100px;
+  font-family:'Nunito',sans-serif;font-weight:800;font-size:11px;letter-spacing:.3px
+}
+.tb-sub{font-size:11px;color:rgba(255,255,255,.55);font-weight:600}
+
+/* ── BLOB decorativo topbar ── */
+.topbar-blob{
+  position:absolute;right:180px;top:-20px;width:80px;height:80px;
+  background:rgba(245,200,0,.15);border-radius:60% 40% 70% 30% / 50% 60% 40% 50%;
+  pointer-events:none
+}
+
+/* ── LAYOUT ── */
+.shell{display:grid;grid-template-rows:64px 1fr;height:100vh}
+.body{display:grid;grid-template-columns:310px 1fr;height:calc(100vh - 64px);overflow:hidden}
+
+/* ── SIDEBAR ── */
+.sidebar{
+  background:var(--white);border-right:2px solid var(--border);
+  display:flex;flex-direction:column;overflow:hidden;
+  box-shadow:3px 0 12px rgba(27,79,138,.06)
+}
+.sidebar-scroll{flex:1;overflow-y:auto;padding:20px 18px 10px;display:flex;flex-direction:column;gap:14px}
+.sidebar-footer{padding:14px 18px;border-top:2px solid var(--border);background:var(--surface2)}
+
+.sec-label{
+  font-family:'Fredoka One',cursive;font-size:13px;color:var(--blue);
+  letter-spacing:.3px;margin-bottom:10px;display:flex;align-items:center;gap:6px
+}
+.fgroup{margin-bottom:11px}
+.flabel{display:block;font-size:12px;color:var(--text-muted);margin-bottom:5px;font-weight:700;font-family:'Nunito',sans-serif}
+
+select,textarea,input[type=text]{
+  width:100%;background:var(--surface2);border:2px solid var(--border);
+  color:var(--text);padding:9px 12px;border-radius:var(--rs);
+  font-family:'Nunito Sans',sans-serif;font-size:13px;outline:none;transition:border .15s,box-shadow .15s
+}
+select{
+  appearance:none;-webkit-appearance:none;
+  background-image:url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' width='10' height='6'%3E%3Cpath d='M0 0l5 6 5-6z' fill='%235A7A9E'/%3E%3C/svg%3E");
+  background-repeat:no-repeat;background-position:right 11px center;padding-right:30px;cursor:pointer
+}
+select:focus,textarea:focus,input:focus{border-color:var(--blue-light);box-shadow:0 0 0 3px var(--blue-pale)}
+textarea{resize:vertical;min-height:64px}
+::placeholder{color:var(--text-dim)}
+
+/* chips */
+.chips{display:flex;flex-wrap:wrap;gap:6px}
+.chip{
+  padding:6px 13px;border-radius:100px;font-size:12px;font-weight:800;
+  cursor:pointer;border:2px solid var(--border2);background:var(--surface2);
+  color:var(--text-muted);transition:all .15s;white-space:nowrap;user-select:none;
+  font-family:'Nunito',sans-serif
+}
+.chip:hover{border-color:var(--blue-light);color:var(--blue);background:var(--blue-pale)}
+.chip.on{background:var(--blue);border-color:var(--blue);color:#fff}
+
+/* toggles */
+.dyn-section{
+  background:var(--blue-pale);border:2px solid var(--blue-pale2);
+  border-radius:var(--rs);padding:12px;display:flex;flex-direction:column;gap:9px
+}
+.dyn-row{display:flex;align-items:center;justify-content:space-between;gap:8px}
+.dyn-label{font-size:12px;color:var(--text-muted);font-weight:700}
+.toggle{
+  width:36px;height:20px;background:var(--border2);border-radius:100px;
+  cursor:pointer;position:relative;transition:background .2s;flex-shrink:0
+}
+.toggle.on{background:var(--blue)}
+.toggle::after{
+  content:'';position:absolute;width:16px;height:16px;background:#fff;
+  border-radius:50%;top:2px;left:2px;transition:transform .2s;
+  box-shadow:0 1px 4px rgba(27,79,138,.3)
+}
+.toggle.on::after{transform:translateX(16px)}
+
+/* insight */
+.insight-box{
+  background:var(--yellow-pale);border:2px solid var(--yellow-mid);
+  border-radius:var(--rs);padding:11px 13px;position:relative;overflow:hidden
+}
+.insight-box::after{
+  content:'🐾';position:absolute;right:8px;bottom:-4px;font-size:28px;opacity:.15
+}
+.insight-ttl{font-family:'Fredoka One',cursive;font-size:12px;color:var(--blue);letter-spacing:.3px;margin-bottom:7px}
+.im-row{display:flex;justify-content:space-between;font-size:12px;padding:4px 0;border-bottom:1px solid var(--yellow-mid)}
+.im-row:last-child{border:none}
+.im-val{font-family:'Nunito',sans-serif;font-weight:800}
+.good{color:var(--green)}.warn{color:#C98A00}.bad{color:var(--red)}
+
+/* button */
+.btn-gen{
+  width:100%;padding:13px;background:var(--yellow);color:var(--blue);border:none;
+  border-radius:var(--rs);font-family:'Fredoka One',cursive;font-size:16px;letter-spacing:.3px;
+  cursor:pointer;transition:all .2s;display:flex;align-items:center;justify-content:center;gap:8px;
+  box-shadow:0 4px 16px rgba(245,200,0,.4)
+}
+.btn-gen:hover{background:var(--yellow-light);transform:translateY(-2px);box-shadow:0 6px 24px rgba(245,200,0,.5)}
+.btn-gen:active{transform:none}
+.btn-gen:disabled{opacity:.5;cursor:not-allowed;transform:none}
+
+.paw-div{
+  display:flex;align-items:center;gap:8px;color:var(--text-dim);
+  font-size:10px;font-weight:700;letter-spacing:.5px;font-family:'Nunito',sans-serif;text-transform:uppercase
+}
+.paw-div::before,.paw-div::after{content:'';flex:1;border-top:1.5px dashed var(--border)}
+
+/* ── MAIN ── */
+.main{overflow-y:auto;padding:24px 28px;display:flex;flex-direction:column;gap:20px;background:var(--bg)}
+
+/* empty */
+.empty{
+  flex:1;display:flex;flex-direction:column;align-items:center;
+  justify-content:center;text-align:center;gap:14px;padding:60px 24px;min-height:400px
+}
+.empty-blob{
+  width:100px;height:100px;background:var(--yellow);border-radius:60% 40% 55% 45% / 45% 55% 45% 55%;
+  display:flex;align-items:center;justify-content:center;font-size:42px;
+  animation:wobble 3s ease-in-out infinite;box-shadow:0 8px 24px rgba(245,200,0,.4)
+}
+@keyframes wobble{
+  0%,100%{border-radius:60% 40% 55% 45% / 45% 55% 45% 55%}
+  33%{border-radius:40% 60% 45% 55% / 55% 45% 55% 45%}
+  66%{border-radius:55% 45% 60% 40% / 40% 60% 40% 60%}
+}
+.empty-ttl{font-family:'Fredoka One',cursive;font-size:22px;color:var(--blue)}
+.empty-sub{color:var(--text-muted);font-size:13px;max-width:280px;line-height:1.6;font-weight:600}
+
+/* loading */
+.loading{display:none;flex-direction:column;align-items:center;justify-content:center;gap:14px;padding:60px;min-height:300px}
+.loading.on{display:flex}
+.spin-blob{
+  width:56px;height:56px;background:var(--yellow);
+  border-radius:60% 40% 55% 45% / 45% 55% 45% 55%;
+  display:flex;align-items:center;justify-content:center;font-size:24px;
+  animation:spinblob 1s linear infinite;box-shadow:0 4px 16px rgba(245,200,0,.4)
+}
+@keyframes spinblob{to{transform:rotate(360deg)}}
+.loading-msg{color:var(--text-muted);font-size:13px;font-weight:700;font-family:'Nunito',sans-serif}
+
+/* search notice */
+.search-notice{
+  background:var(--blue-pale);border:2px solid var(--blue-pale2);
+  border-radius:var(--rs);padding:10px 14px;font-size:12px;color:var(--blue-mid);
+  display:none;align-items:center;gap:8px;font-weight:700;font-family:'Nunito',sans-serif
+}
+.search-notice.on{display:flex}
+
+/* strategy */
+.strategy{
+  background:var(--white);border:2px solid var(--border);border-left:5px solid var(--blue);
+  border-radius:var(--r);padding:16px 18px;display:none;
+  box-shadow:var(--shadow);animation:fadeUp .3s ease
+}
+.strategy.on{display:block}
+@keyframes fadeUp{from{opacity:0;transform:translateY(8px)}to{opacity:1;transform:translateY(0)}}
+.st-label{font-family:'Fredoka One',cursive;font-size:12px;color:var(--blue);letter-spacing:.3px;margin-bottom:6px}
+.st-desc{font-size:13px;color:var(--text-muted);line-height:1.6;font-weight:600}
+.st-tags{display:flex;flex-wrap:wrap;gap:6px;margin-top:10px}
+.st-tag{
+  padding:4px 10px;border-radius:100px;font-size:11px;font-weight:800;
+  background:var(--blue-pale);border:2px solid var(--blue-pale2);color:var(--text-muted);
+  font-family:'Nunito',sans-serif
+}
+.st-tag.hl{background:var(--yellow-pale);border-color:var(--yellow-mid);color:#8A6800}
+
+/* OR bar */
+.or-bar{
+  display:flex;align-items:center;gap:12px;background:var(--white);
+  border:2px solid var(--border);border-radius:var(--rs);padding:12px 16px;
+  box-shadow:var(--shadow)
+}
+.or-track{flex:1;height:8px;background:var(--border);border-radius:100px;overflow:hidden}
+.or-fill{height:100%;border-radius:100px;background:linear-gradient(90deg,var(--blue-mid),var(--blue-light));transition:width .7s cubic-bezier(.34,1.56,.64,1)}
+.or-lbl{font-size:11px;color:var(--text-muted);white-space:nowrap;font-weight:800;font-family:'Nunito',sans-serif}
+.or-val{font-family:'Fredoka One',cursive;font-size:20px;color:var(--blue);white-space:nowrap}
+
+/* subjects */
+.subjects-hdr{display:flex;align-items:center;justify-content:space-between;margin-bottom:12px}
+.subjects-ttl{font-family:'Fredoka One',cursive;font-size:18px;color:var(--blue)}
+.subjects-hint{font-size:11px;color:var(--text-dim);font-weight:700}
+.subjects-grid{display:flex;flex-direction:column;gap:10px}
+
+.scard{
+  background:var(--white);border:2px solid var(--border);border-radius:var(--r);
+  padding:14px 16px;cursor:pointer;transition:all .15s;box-shadow:var(--shadow);
+  position:relative;overflow:hidden
+}
+.scard::before{
+  content:'';position:absolute;left:0;top:0;bottom:0;width:5px;
+  background:var(--border);border-radius:5px 0 0 5px;transition:background .15s
+}
+.scard::after{
+  content:'';position:absolute;right:-12px;top:-12px;width:48px;height:48px;
+  background:var(--blue-pale);border-radius:50%;opacity:0;transition:opacity .2s
+}
+.scard:hover{border-color:var(--blue-pale2);box-shadow:var(--shadow-md);transform:translateX(2px)}
+.scard:hover::before{background:var(--blue-light)}
+.scard:hover::after{opacity:1}
+.scard.sel{border-color:var(--blue);background:var(--blue-pale);box-shadow:0 0 0 3px rgba(27,79,138,.1)}
+.scard.sel::before{background:var(--blue)}
+.sc-top{display:flex;align-items:flex-start;gap:10px;position:relative;z-index:1}
+.sc-num{
+  width:24px;height:24px;border-radius:50%;background:var(--yellow);
+  display:flex;align-items:center;justify-content:center;
+  font-family:'Fredoka One',cursive;font-size:11px;color:var(--blue);
+  flex-shrink:0;margin-top:1px;box-shadow:0 2px 6px rgba(245,200,0,.4)
+}
+.scard.sel .sc-num{background:var(--blue);color:#fff;box-shadow:0 2px 8px rgba(27,79,138,.3)}
+.sc-text{flex:1;font-size:14px;font-weight:700;line-height:1.45;color:var(--text)}
+.sc-tags{display:flex;flex-wrap:wrap;gap:5px;margin-top:9px;margin-left:34px;position:relative;z-index:1}
+.badge{
+  padding:3px 9px;border-radius:100px;font-size:10px;font-weight:800;
+  background:var(--surface2);border:2px solid var(--border);color:var(--text-muted);
+  font-family:'Nunito',sans-serif
+}
+.badge.hi{background:rgba(46,184,122,.08);border-color:rgba(46,184,122,.3);color:var(--green)}
+.badge.md{background:var(--yellow-pale);border-color:var(--yellow-mid);color:#8A6800}
+.badge.lo{background:rgba(232,75,75,.08);border-color:rgba(232,75,75,.25);color:var(--red)}
+.badge.dyn{background:var(--blue-pale);border-color:var(--blue-pale2);color:var(--blue-mid)}
+
+/* output */
+.output{
+  background:var(--white);border:2px solid var(--border);border-radius:var(--r);
+  overflow:hidden;display:none;animation:fadeUp .3s ease;box-shadow:var(--shadow)
+}
+.output.on{display:block}
+.out-tabs{display:flex;border-bottom:2px solid var(--border);background:var(--blue);overflow-x:auto}
+.otab{
+  padding:11px 18px;font-size:12px;font-weight:800;color:rgba(255,255,255,.6);
+  cursor:pointer;border-bottom:3px solid transparent;margin-bottom:-1px;
+  transition:all .15s;white-space:nowrap;font-family:'Nunito',sans-serif
+}
+.otab:hover{color:#fff;background:rgba(255,255,255,.1)}
+.otab.on{color:var(--yellow);border-color:var(--yellow);background:rgba(255,255,255,.08)}
+.out-body{padding:18px}
+.out-pane{display:none}
+.out-pane.on{display:block}
+.out-pane-ttl{font-size:11px;color:var(--text-muted);font-weight:700;font-family:'Nunito',sans-serif;margin-bottom:9px}
+
+.code-box{
+  background:var(--bg);border:2px solid var(--border);border-radius:var(--rs);
+  padding:14px;font-family:'Courier New',monospace;font-size:12px;line-height:1.7;
+  color:var(--text);overflow-x:auto;white-space:pre-wrap;word-break:break-word
+}
+.kw{color:var(--blue);font-weight:700}
+.vr{color:var(--blue-light)}
+
+.copy-btn{
+  display:inline-flex;align-items:center;gap:6px;padding:7px 14px;
+  background:var(--surface2);border:2px solid var(--border2);color:var(--text-muted);
+  border-radius:var(--rs);font-size:12px;font-weight:800;cursor:pointer;
+  transition:all .15s;font-family:'Nunito',sans-serif;margin-top:10px
+}
+.copy-btn:hover{border-color:var(--blue);color:var(--blue);background:var(--blue-pale)}
+.copy-btn.ok{border-color:var(--green);color:var(--green)}
+
+.pre-box{
+  background:var(--bg);border:2px solid var(--border);border-radius:var(--rs);
+  padding:14px;font-size:14px;color:var(--text);line-height:1.6;font-weight:600
+}
+.pre-meta{display:flex;align-items:center;justify-content:space-between;margin-top:8px}
+.char-c{font-size:11px;color:var(--text-dim);font-weight:800}
+.char-c.warn{color:#C98A00}
+
+.tips-list{display:flex;flex-direction:column;gap:8px}
+.tip-item{
+  font-size:13px;color:var(--text-muted);line-height:1.6;font-weight:600;
+  padding:10px 13px;background:var(--surface2);border:2px solid var(--border);
+  border-radius:var(--rs)
+}
+.tip-item:first-child{border-left:5px solid var(--yellow)}
+.tip-item:nth-child(2){border-left:5px solid var(--blue)}
+
+.fields-grid{display:grid;grid-template-columns:1fr 1fr;gap:8px}
+.field-pill{
+  background:var(--blue-pale);border:2px solid var(--blue-pale2);border-radius:var(--rs);
+  padding:8px 10px;font-size:11px;font-family:'Courier New',monospace;color:var(--blue-mid);
+  cursor:pointer;transition:all .15s
+}
+.field-pill:hover{border-color:var(--blue);background:var(--blue-pale2)}
+.fp-label{font-family:'Nunito',sans-serif;font-size:10px;color:var(--text-dim);margin-bottom:2px;font-weight:800}
+
+/* scrollbar */
+::-webkit-scrollbar{width:5px;height:5px}
+::-webkit-scrollbar-track{background:transparent}
+::-webkit-scrollbar-thumb{background:var(--blue-pale2);border-radius:10px}
+::-webkit-scrollbar-thumb:hover{background:var(--blue-light)}
+</style>
+</head>
+<body>
+<div class="shell">
+
+<!-- TOPBAR -->
+<div class="topbar">
+  <div class="topbar-blob"></div>
+  <div class="logo">
+    <div class="logo-circle">🐾</div>
+    <div>
+      <div class="logo-name">puppis</div>
+      <div class="logo-tagline">Las mascotas primero</div>
+    </div>
+  </div>
+  <div class="topbar-right">
+    <div class="tb-sub">Agente de Asuntos Email</div>
+    <div class="tb-badge">✦ v2 · 141 campañas ARG</div>
+  </div>
+</div>
+
+<div class="body">
+<!-- SIDEBAR -->
+<aside class="sidebar">
+  <div class="sidebar-scroll">
+
+    <div>
+      <div class="sec-label">📍 País y audiencia</div>
+      <div class="fgroup">
+        <label class="flabel">País</label>
+        <select id="sel-pais" onchange="onPaisChange()">
+          <option value="arg">🇦🇷 Argentina</option>
+          <option value="col">🇨🇴 Colombia</option>
+        </select>
+      </div>
+      <div class="fgroup">
+        <label class="flabel">Mascota</label>
+        <div class="chips" id="chips-mascota">
+          <div class="chip on" data-v="perro">🐶 Perro</div>
+          <div class="chip" data-v="gato">🐱 Gato</div>
+          <div class="chip" data-v="ambas">Ambas</div>
+          <div class="chip" data-v="na">No aplica</div>
+        </div>
+      </div>
+    </div>
+
+    <div class="paw-div">🐾 campaña</div>
+
+    <div>
+      <div class="sec-label">📣 Tipo de campaña</div>
+      <div class="fgroup">
+        <select id="sel-tipo" onchange="onTipoChange()">
+          <option value="">— Elegir tipo —</option>
+          <option value="lanzamiento">🚀 Lanzamiento</option>
+          <option value="oferta">🏷️ Ofertas por categoría</option>
+          <option value="banco">🏦 Promo bancaria</option>
+          <option value="evento">🎉 Evento (Hot Sale, Cyber…)</option>
+          <option value="remarketing_carrito">🛒 Remarketing · Carrito</option>
+          <option value="remarketing_nav">👁️ Remarketing · Navegación</option>
+          <option value="replenishment">🔄 Replenishment</option>
+          <option value="cumple_mascota">🎂 Cumpleaños mascota</option>
+          <option value="cumple_cliente">🎁 Cumpleaños cliente</option>
+          <option value="relacionamiento">💛 Relacionamiento</option>
+          <option value="institucional">📢 Institucional</option>
+          <option value="educacional">📚 Educacional</option>
+          <option value="actualidad">🌐 Tema de actualidad</option>
+        </select>
+      </div>
+      <div class="fgroup">
+        <label class="flabel" id="lbl-beneficio">Detalle / Beneficio principal</label>
+        <textarea id="inp-beneficio" placeholder="Ej: nueva línea de snacks naturales, 3 cuotas sin interés con Galicia, 30% off en alimentos…"></textarea>
+      </div>
+    </div>
+
+    <div class="paw-div">🐾 campos</div>
+
+    <div>
+      <div class="sec-label">⚙️ Campos dinámicos</div>
+      <div class="dyn-section" id="dyn-section">
+        <div class="dyn-row">
+          <span class="dyn-label">🐾 Nombre mascota</span>
+          <div class="toggle on" data-key="mascota" onclick="toggleDyn(this)"></div>
+        </div>
+        <div class="dyn-row">
+          <span class="dyn-label">👤 Nombre cliente</span>
+          <div class="toggle" data-key="nombre" onclick="toggleDyn(this)"></div>
+        </div>
+        <div class="dyn-row" id="dyn-carrito-row" style="display:none">
+          <span class="dyn-label">🛒 Total carrito</span>
+          <div class="toggle" data-key="carrito" onclick="toggleDyn(this)"></div>
+        </div>
+        <div class="dyn-row" id="dyn-nav-row" style="display:none">
+          <span class="dyn-label">👁️ Categoría navegada</span>
+          <div class="toggle" data-key="nav" onclick="toggleDyn(this)"></div>
+        </div>
+        <div class="dyn-row" id="dyn-cumple-row" style="display:none">
+          <span class="dyn-label">🎂 Cumpleaños mascota</span>
+          <div class="toggle on" data-key="cumple" onclick="toggleDyn(this)"></div>
+        </div>
+        <div class="dyn-row" id="dyn-lastprod-row" style="display:none">
+          <span class="dyn-label">📦 Último producto</span>
+          <div class="toggle" data-key="lastprod" onclick="toggleDyn(this)"></div>
+        </div>
+      </div>
+    </div>
+
+    <div class="insight-box" id="insight-box">
+      <div class="insight-ttl">Benchmark del tipo</div>
+      <div class="im-row"><span>OR promedio base</span><span class="im-val warn">12.8%</span></div>
+      <div class="im-row"><span>CTR promedio base</span><span class="im-val warn">14.5%</span></div>
+    </div>
+
+  </div><!-- /scroll -->
+
+  <div class="sidebar-footer">
+    <button class="btn-gen" id="btn-gen" onclick="generar()">🐾 Generar asuntos</button>
+  </div>
+</aside>
+
+<!-- MAIN -->
+<main class="main" id="main">
+  <div class="empty" id="el-empty">
+    <div class="empty-blob">🐾</div>
+    <div class="empty-ttl">¡Hola! Configurá tu campaña</div>
+    <div class="empty-sub">Elegí el tipo, país, mascota y beneficio. El agente genera asuntos con datos reales de performance de Puppis.</div>
+  </div>
+
+  <div class="loading" id="el-loading">
+    <div class="spin-blob">🐾</div>
+    <div class="loading-msg" id="loading-msg">Analizando patrones de campañas…</div>
+  </div>
+
+  <div id="el-results" style="display:none;flex-direction:column;gap:20px">
+
+    <div class="search-notice" id="el-search-notice">
+      🔍 <span id="search-notice-text">Buscando contexto actualizado en la web…</span>
+    </div>
+
+    <div class="strategy" id="el-strategy">
+      <div class="st-label" id="st-label">Estrategia recomendada</div>
+      <div class="st-desc" id="st-desc"></div>
+      <div class="st-tags" id="st-tags"></div>
+    </div>
+
+    <div class="or-bar">
+      <span class="or-lbl">OR estimado</span>
+      <div class="or-track"><div class="or-fill" id="or-fill" style="width:0%"></div></div>
+      <span class="or-val" id="or-val">—</span>
+      <span style="font-size:11px;color:var(--text-dim);font-weight:700">vs base 12.8%</span>
+    </div>
+
+    <div>
+      <div class="subjects-hdr">
+        <div class="subjects-ttl">Asuntos sugeridos</div>
+        <div class="subjects-hint">Clic para ver Liquid + preheader</div>
+      </div>
+      <div class="subjects-grid" id="subjects-grid"></div>
+    </div>
+
+    <div class="output" id="el-output">
+      <div class="out-tabs">
+        <div class="otab on" onclick="switchTab('liquid',this)">Fórmula Liquid</div>
+        <div class="otab" onclick="switchTab('preheader',this)">Preheader</div>
+        <div class="otab" onclick="switchTab('campos',this)">Campos</div>
+        <div class="otab" onclick="switchTab('tips',this)">Tips</div>
+      </div>
+      <div class="out-body">
+        <div class="out-pane on" id="pane-liquid">
+          <div class="out-pane-ttl">Listo para copiar a tu ESP (Emblue / Iterable / etc.)</div>
+          <div class="code-box" id="code-liquid"></div>
+          <button class="copy-btn" onclick="doCopy('code-liquid',this)">📋 Copiar fórmula</button>
+        </div>
+        <div class="out-pane" id="pane-preheader">
+          <div class="out-pane-ttl">Preheader complementario (máx. 150 caracteres)</div>
+          <div class="pre-box" id="pre-text"></div>
+          <div class="pre-meta">
+            <div class="char-c" id="char-c"></div>
+            <button class="copy-btn" onclick="doCopy('pre-text',this)">📋 Copiar</button>
+          </div>
+        </div>
+        <div class="out-pane" id="pane-campos">
+          <div class="out-pane-ttl">Campos disponibles para este país — clic para copiar</div>
+          <div class="fields-grid" id="fields-grid"></div>
+        </div>
+        <div class="out-pane" id="pane-tips">
+          <div class="tips-list" id="tips-list"></div>
+        </div>
+      </div>
+    </div>
+
+  </div>
+</main>
+</div>
+</div>
+
+<script>
+// ── KNOWLEDGE BASE ──────────────────────────────────────
+const KB = {
+  lanzamiento:{or:9.3,ctr:10.7,est:"Curiosidad + novedad. Nombrar el producto o marca específica aumenta el OR hasta +37%. Evitar exclamaciones vacías.",tags:["Curiosidad","Producto específico","Novedad"],hl:["Producto específico"],patron:"NOVEDAD + MARCA/PRODUCTO + beneficio concreto",tips:["✅ Nombrar la línea o marca específica → OR promedio 17.4% vs 11.5% sin marca","✅ 'Llegó', 'Ya está acá', 'Nuevo en Puppis' funcionan como gancho de apertura","⚠️ Asuntos tipo 'Gran lanzamiento' sin especificar el producto → OR ~6%","💡 Si el producto tiene propuesta única (natural, sin cereal, hipoalergénico), mencionala"]},
+  oferta:{or:11.3,ctr:16.8,est:"Beneficio concreto y medible. 'Ahorrá X en [MARCA]' supera al '% de descuento'. CTR alto cuando el beneficio es claro.",tags:["Ahorro concreto","Marca nombrada","CTR alto ~17%"],hl:["Ahorro concreto","Marca nombrada"],patron:"AHORRO CONCRETO + MARCA/PRODUCTO específico",tips:["✅ 'Ahorrá X en [MARCA]' → OR ~26% vs promedio 12.8%","✅ Mencionar kilos de regalo o bonus bag dispara el CTR","⚠️ Mencionar % en el asunto NO mejora OR (11.4% vs 13.4% sin %)","💡 Si hay regalo físico, priorizalo sobre el %"]},
+  banco:{or:10.5,ctr:14.0,est:"Destacar facilidad de pago sin porcentajes. Foco en cuotas, banco y producto específico.",tags:["Sin %","Banco específico","Cuotas sin interés"],hl:["Sin %"],patron:"FACILIDAD + BANCO + PRODUCTO/CATEGORÍA",tips:["✅ No mencionar % — regla de campaña + no suma OR","✅ Nombrar el banco específico genera confianza","💡 Combiná banco + producto específico para el mejor CTR"]},
+  evento:{or:9.9,ctr:13.6,est:"Vincular el evento al beneficio concreto. Solo el nombre del evento tiene OR bajísimo sin beneficio.",tags:["Evento + beneficio","Urgencia contextual"],hl:["Evento + beneficio"],patron:"EVENTO + BENEFICIO CONCRETO",tips:["✅ Top OR eventos: 'Primavera + Bonus Bag Royal Canin' → OR 40%","⚠️ 'Este Lunes Llega Cyber Monday' → OR 3% (peor del dataset)","💡 El evento es contexto, no el protagonista"]},
+  remarketing_carrito:{or:14.5,ctr:18.5,est:"Personalización máxima con datos del carrito. Nombre mascota + monto genera urgencia personal. Tono cálido.",tags:["Alta personalización","Carrito abandonado","OR alto ~14-18%"],hl:["Alta personalización","Carrito abandonado"],patron:"NOMBRE MASCOTA + CARRITO + URGENCIA SUAVE",tips:["✅ Nombre mascota + monto del carrito → máxima relevancia","✅ Tono cariñoso > alarmista","⚠️ Evitar tono vigilante: 'Vimos que miraste...' genera rechazo","💡 OR transaccional 'Acerca de tu pedido' → 79%"]},
+  remarketing_nav:{or:13.0,ctr:16.0,est:"Usar la categoría o producto navegado para personalizar. Genera 'justo lo que buscabas'.",tags:["Navegación","Producto visto","Personalización"],hl:["Navegación"],patron:"CATEGORÍA VISTA + BENEFICIO + NOMBRE MASCOTA",tips:["✅ Usar categoría navegada para personalizar el asunto","💡 Combinar con nombre de mascota si está disponible","⚠️ No sonar como si estuvieras vigilando al usuario"]},
+  replenishment:{or:12.0,ctr:13.5,est:"Recordatorio afectuoso con timing preciso. Ya conoce el producto — clave: tono cuidado + nombre mascota.",tags:["Recordatorio","Tono afectuoso","Timing clave"],hl:["Tono afectuoso"],patron:"RECORDATORIO AFECTUOSO + PRODUCTO + URGENCIA SUAVE",tips:["✅ 'Pronto se le acaba a [MASCOTA]' supera a '¡Reponelo ya!'","✅ Podés usar último producto comprado para personalizar","💡 Urgencia suave ('ya casi') > urgencia agresiva ('¡urgente!')"]},
+  cumple_mascota:{or:18.5,ctr:15.0,est:"Uno de los tipos con mayor OR. Cumpleaños + nombre mascota genera apertura emocional muy alta.",tags:["Cumpleaños","Emoción máxima","OR alto ~18%"],hl:["Cumpleaños","Nombre mascota"],patron:"🎂 NOMBRE MASCOTA + CELEBRACIÓN + SORPRESA",tips:["✅ OR más alto de todos los tipos relacionales","✅ El nombre de mascota es ESENCIAL — sin él pierde impacto","💡 Combinar emoción con un beneficio suave","⚠️ No mezclar con descuento agresivo — pierde autenticidad"]},
+  cumple_cliente:{or:16.0,ctr:12.0,est:"Alto OR por personalización directa. Celebrar al cliente con su nombre.",tags:["Cumpleaños cliente","Nombre cliente","Emoción"],hl:["Nombre cliente"],patron:"NOMBRE CLIENTE + CELEBRACIÓN + BENEFICIO ESPECIAL",tips:["✅ Usar {{customer.first_name}} para máxima personalización","✅ El regalo debe sentirse especial, no genérico","⚠️ Si no tenés la fecha exacta, usá 'Tu mes especial'"]},
+  relacionamiento:{or:10.0,ctr:9.5,est:"Emoción y vínculo sin presión de compra. Celebrar hitos o el amor por la mascota.",tags:["Emoción","Vínculo","Sin presión de compra"],hl:["Emoción"],patron:"EMOCIÓN + NOMBRE MASCOTA + HITO/CELEBRACIÓN",tips:["✅ Nombre mascota esencial en relacionamiento","⚠️ No mezcles emoción con oferta dura","💡 Beneficio suave > descuento agresivo"]},
+  institucional:{or:20.0,ctr:7.0,est:"Claridad total. El asunto 'Acerca de tu pedido' tuvo OR 79%. Utilidad > creatividad.",tags:["Claridad","OR altísimo posible","Transaccional"],hl:["Claridad"],patron:"INFORMACIÓN CLARA + DATO ÚTIL",tips:["✅ 'Acerca de tu pedido' → OR 79% — el más alto del dataset","✅ Claridad > creatividad en comunicaciones operativas","⚠️ No uses tono publicitario en comunicados operativos"]},
+  educacional:{or:9.0,ctr:8.5,est:"Curiosidad + relevancia para la mascota específica. Preguntas o datos sorprendentes abren bien.",tags:["Curiosidad","Dato sorprendente","Pregunta"],hl:["Curiosidad"],patron:"PREGUNTA o DATO CURIOSO + RELEVANCIA PARA LA MASCOTA",tips:["✅ Pregunta bien formulada genera curiosidad","✅ Datos concretos funcionan mejor que generalidades","⚠️ 'Newsletter Puppis - Edición X' → OR muy bajo"]},
+  actualidad:{or:11.0,ctr:12.0,est:"Conectar la marca con un hecho relevante del momento. Requiere búsqueda para obtener contexto actualizado.",tags:["Actualidad","Relevancia inmediata","Emoción"],hl:["Actualidad"],patron:"HECHO ACTUAL + CONEXIÓN CON MASCOTA + BENEFICIO",tips:["✅ Relevancia temporal dispara apertura si el tema es genuinamente trending","✅ Conectar el hecho con la mascota o el dueño","⚠️ Evitar temas polémicos o divisivos"]}
+};
+
+const FIELDS = {
+  arg:{"Nombre mascota":"{{customer.custom_attributes.nombre_mascota}}","Tipo mascota":"{{customer.custom_attributes.tipo_mascota}}","Cumple mascota":"{{customer.custom_attributes.fecha_nacimiento_mascota}}","Nombre cliente":"{{customer.first_name}}","Email":"{{customer.email}}","Cumple cliente":"{{customer.birthday}}","Total carrito":"{{customer.abandoned_cart.total_price}}","URL carrito":"{{customer.abandoned_cart.url}}","Producto navegado":"{{customer.browser_session.featured}}","Cat. navegada":"{{customer.browser_session.featured.category.name}}","Último producto":"{{customer.last_purchase_products.all}}","Último banco":"{{customer.last_purchase.payment_methods.0.bank}}"},
+  col:{"Nombre mascota":"{{customer.members.0.name}}","Tipo mascota":"{{customer.members.0.relationship}}","Cumple mascota":"{{customer.members.0.birthday}}","Nombre cliente":"{{customer.first_name}}","Email":"{{customer.email}}","Cumple cliente":"{{customer.birthday}}","Total carrito":"{{customer.abandoned_cart.total_price}}","URL carrito":"{{customer.abandoned_cart.url}}","Producto navegado":"{{customer.browser_session.featured}}","Cat. navegada":"{{customer.browser_session.featured.category.name}}","Último producto":"{{customer.last_purchase_products.all}}","Último banco":"{{customer.last_purchase.payment_methods.0.bank}}"} 
+};
+
+function makeLiquid(subject,tipo,pais,mascota,dyn){
+  const isAR=pais==='arg';
+  if(!dyn.mascota)return subject;
+  const nomF=isAR?'customer.custom_attributes.nombre_mascota':'customer.members.0.name';
+  const tipF=isAR?'customer.custom_attributes.tipo_mascota':'customer.members.0.relationship';
+  const nomPH=isAR?'{{customer.custom_attributes.nombre_mascota}}':'{{customer.members.0.name}}';
+  const espFB=mascota==='perro'?'tu perro':mascota==='gato'?'tu gato':'tu mascota';
+  const sub2=subject.replace(new RegExp(escReg(nomPH),'g'),espFB);
+  let cond;
+  if(mascota==='perro')cond=`${nomF} and ${tipF} == ${isAR?'"Perro"':'"pet_dog"'}`;
+  else if(mascota==='gato')cond=`${nomF} and ${tipF} == ${isAR?'"Gato"':'"pet_cat"'}`;
+  else{const t1=isAR?'"Perro"':'"pet_dog"',t2=isAR?'"Gato"':'"pet_cat"';cond=`${nomF} and (${tipF} == ${t1} or ${tipF} == ${t2})`;}
+  return`{% if ${cond} %}${subject}{% else %}${sub2}{% endif %}`;
+}
+function escReg(s){return s.replace(/[.*+?^${}()|[\]\\]/g,'\\$&')}
+
+function makePreheader(tipo,pais,beneficio){
+  const isAR=pais==='arg';
+  const ship=isAR?'Envío gratis desde $27.000':'Envío gratis desde $160.000';
+  const b=beneficio||'productos seleccionados';
+  const map={lanzamiento:`Conocé ${b} antes que nadie. ${ship}. ¡Entrá ya!`,oferta:`Aprovechá ${b} al mejor precio. ${ship} en compras seleccionadas.`,banco:`Pagá en cuotas sin interés. ${ship}. Oferta por tiempo limitado.`,evento:`Las mejores promos están acá. ${ship}. ¡No te quedés sin las tuyas!`,remarketing_carrito:`Tu pedido sigue disponible. ${ship} incluido. Completalo en segundos.`,remarketing_nav:`Justo lo que estabas buscando. ${ship} en tu próxima compra.`,replenishment:`Reponelo hoy y no te quedés sin stock. ${ship} en tu compra.`,cumple_mascota:`Un regalo especial para festejar juntos. ${ship} en toda la tienda. 🎉`,cumple_cliente:`Tu regalo de cumpleaños te espera. ${ship} incluido.`,relacionamiento:`Un detalle especial para vos y tu mascota. ${ship} siempre.`,institucional:`Info importante en un clic. ${ship} disponible en Puppis.`,educacional:`Consejos de expertos para tu mascota. ${ship} en todos los pedidos.`,actualidad:`${b} — y Puppis siempre al lado tuyo. ${ship} incluido.`};
+  return(map[tipo]||`${b} esperándote en Puppis. ${ship}.`).slice(0,150);
+}
+
+function getTemplates(tipo,pais,mascota,dyn,beneficio){
+  const isAR=pais==='arg';
+  const vos=isAR?'vos':'tú';
+  const b=beneficio||'[beneficio]';
+  const nomPH=isAR?'{{customer.custom_attributes.nombre_mascota}}':'{{customer.members.0.name}}';
+  const nomCliPH='{{customer.first_name}}';
+  const carritoTot='{{customer.abandoned_cart.total_price}}';
+  const navCat='{{customer.browser_session.featured.category.name}}';
+  const lastProd='{{customer.last_purchase_products.all}}';
+  const uM=dyn.mascota,uN=dyn.nombre,uC=dyn.carrito,uNv=dyn.nav,uLP=dyn.lastprod;
+  const M=(fb)=>uM?nomPH:fb;
+  const N=(fb)=>uN?nomCliPH:fb;
+  const C=(fb)=>uC?carritoTot:fb;
+  const NV=(fb)=>uNv?navCat:fb;
+  const LP=(fb)=>uLP?lastProd:fb;
+  const esp=mascota==='perro'?'perro':mascota==='gato'?'gato':'mascota';
+  const D=(c,l)=>c?l+'🔀':null;
+
+  const t={
+    lanzamiento:[
+      {text:`🐾 Llegó a Puppis: ${b}${uM?` — ¡${M('tu '+esp)} lo va a amar!`:''}`,or:14,bc:'hi',tags:['Novedad','Marca específica',D(uM,'Nombre mascota ')]},
+      {text:`¡Nuevo en Puppis! ${b} para ${uM?M('tu '+esp):'tu '+esp} 🐾`,or:12,bc:'md',tags:['Novedad',D(uM,'Nombre mascota ')]},
+      {text:`${uM?M('Tu mascota'):'Tu '+esp} lo estaba esperando: ${b} ya está disponible ✨`,or:13,bc:'hi',tags:['Personalización','Curiosidad',D(uM,'Nombre mascota ')]},
+      {text:`Descubrí ${b}: lo nuevo que ${uM?M('tu '+esp):'tu '+esp} no puede perderse 🐶`,or:11,bc:'md',tags:['Curiosidad']},
+      {text:`✦ ${b} ya está en Puppis${uN?` — especial para ${N('vos')}`:''}`,or:10,bc:'md',tags:['Premium',D(uN,'Nombre cliente ')]}
+    ],
+    oferta:[
+      {text:`Ahorrá en ${b}${uM?` para ${M('tu '+esp)}`:''} 🏷️`,or:16,bc:'hi',tags:['Ahorro concreto',D(uM,'Nombre mascota ')]},
+      {text:`Kilos de regalo con ${b}${uM?` — ideal para ${M('tu '+esp)}`:''} 🎁`,or:17,bc:'hi',tags:['Regalo físico','Marca específica',D(uM,'Nombre mascota ')]},
+      {text:`${uM?`${M('Tu mascota')} come mejor`:'Tu '+esp+' come mejor'} y ${vos} gastás menos: ${b}`,or:14,bc:'hi',tags:['Doble beneficio',D(uM,'Nombre mascota ')]},
+      {text:`¿Querés ahorrar? ${b} con las mejores ofertas 💛`,or:13,bc:'md',tags:['Pregunta','Beneficio directo']},
+      {text:`Oferta exclusiva en ${b}: llevá más, pagá menos 🐾`,or:12,bc:'md',tags:['Exclusividad']}
+    ],
+    banco:[
+      {text:`${b}: pagá en cuotas sin interés${uM?` para ${M('tu '+esp)}`:''} 💳`,or:12,bc:'md',tags:['Sin %','Cuotas',D(uM,'Nombre mascota ')]},
+      {text:`${b} — cuotas sin recargo${uM?` para ${M('tu '+esp)}`:''}. Sin letra chica 🐾`,or:11,bc:'md',tags:['Sin %']},
+      {text:`Comprá ${b} sin interés y con envío gratis 🚀`,or:13,bc:'hi',tags:['Sin %','Doble beneficio']},
+      {text:`Tu banco te premia: llevate ${b} en cuotas sin recargo 🏦`,or:11,bc:'md',tags:['Sin %','Banco']},
+      {text:`Pagá fácil y llevá lo mejor para ${uM?M('tu '+esp):'tu '+esp}: ${b} 💳`,or:10,bc:'md',tags:['Sin %',D(uM,'Nombre mascota ')]}
+    ],
+    evento:[
+      {text:`🎉 ${b} — porque ${uM?M('tu '+esp):'tu '+esp} también merece su fiesta`,or:12,bc:'md',tags:['Evento + beneficio',D(uM,'Nombre mascota ')]},
+      {text:`${b}: las mejores promos para ${uM?M('tu '+esp):'tu '+esp} 🐾`,or:14,bc:'hi',tags:['Evento + beneficio',D(uM,'Nombre mascota ')]},
+      {text:`¡Solo en ${b}! Las ofertas que ${uM?M('tu '+esp):'tu mascota'} necesita 🔥`,or:11,bc:'md',tags:['Urgencia','Evento']},
+      {text:`Aprovechá ${b}: oferta especial en los favoritos de ${uM?M('tu mascota'):'tu '+esp} ⭐`,or:13,bc:'hi',tags:['Evento + beneficio',D(uM,'Nombre mascota ')]},
+      {text:`${b} arrancó 🐶 No te quedés sin tus promos — son por tiempo limitado`,or:10,bc:'md',tags:['Urgencia']}
+    ],
+    remarketing_carrito:[
+      {text:uM?`${M('Tu mascota')} te está esperando 🐾 Completá tu compra`:`Tu ${esp} te espera — completá tu compra 🐾`,or:16,bc:'hi',tags:['Personalización',D(uM,'Nombre mascota ')]},
+      {text:uM?`¿${M('Nombre')} ya tiene su ${b}? Terminá el pedido 🛒`:`¿Tu ${esp} ya tiene su ${b}? Terminá el pedido 🛒`,or:15,bc:'hi',tags:['Pregunta',D(uM,'Nombre mascota ')]},
+      {text:uC?`Falta poco: tenés ${C('$X')} en tu carrito esperándote 🛒`:`Falta poco para completar tu pedido — todavía está disponible 🛒`,or:14,bc:'hi',tags:['Urgencia suave',D(uC,'Total carrito ')]},
+      {text:`Dejaste ${b} en tu carrito — todavía está disponible ✨`,or:13,bc:'md',tags:['Directo']},
+      {text:uM?`${M('Tu compañero')} lo necesita: terminá tu pedido`:`Tu ${esp} lo necesita: terminá tu pedido`,or:12,bc:'md',tags:['Emocional',D(uM,'Nombre mascota ')]}
+    ],
+    remarketing_nav:[
+      {text:uNv?`Estuviste mirando ${NV('productos')} para ${uM?M('tu '+esp):'vos'} — tenemos algo especial 👁️`:`Justo lo que buscabas para ${uM?M('tu '+esp):'tu '+esp} — seguí explorando 🐾`,or:14,bc:'hi',tags:['Navegación',D(uNv,'Cat. navegada '),D(uM,'Nombre mascota ')]},
+      {text:uNv?`${NV('Lo que miraste')} para ${uM?M('tu '+esp):'tu mascota'} — ¡y hay más! 🐾`:`No te fuiste con las manos vacías: tus favoritos te esperan 🐾`,or:13,bc:'hi',tags:['Navegación',D(uNv,'Cat. navegada ')]},
+      {text:uM?`${M('Tu mascota')} merece lo mejor — encontraste lo que necesitaba 🌟`:`Tu ${esp} se lo merece — volvé a ver lo que elegiste ✨`,or:12,bc:'md',tags:['Emocional',D(uM,'Nombre mascota ')]},
+      {text:`¿Lo dejaste ir? Todavía está disponible — y con envío gratis 🚀`,or:13,bc:'hi',tags:['Urgencia suave','Envío']},
+      {text:uNv?`Seguís pensando en ${NV('eso que viste')}? Nosotros también 🐾`:`Lo que viste sigue esperándote. ¿Lo llevás ahora? 🛒`,or:11,bc:'md',tags:['Curiosidad',D(uNv,'Cat. navegada ')]}
+    ],
+    replenishment:[
+      {text:uM?`Pronto se le acaba a ${M('tu mascota')}: reponé ${LP(b)} 🔄`:`Pronto se le acaba: reponé ${LP(b)} para tu ${esp} 🔄`,or:14,bc:'hi',tags:['Urgencia suave',D(uM,'Nombre mascota '),D(uLP,'Último producto ')]},
+      {text:uM?`${M('Tu mascota')} espera su ${LP(b)} — ¿ya lo reponés?`:`Tu ${esp} espera su ${LP(b)} — ¿ya lo reponés?`,or:13,bc:'hi',tags:['Pregunta','Afecto',D(uM,'Nombre mascota ')]},
+      {text:`Es hora de reponer ${LP(b)} 🐾 No dejes que ${uM?M('tu mascota'):'tu '+esp} se quede sin su favorito`,or:12,bc:'md',tags:['Urgencia suave',D(uLP,'Último producto ')]},
+      {text:`${LP(b)} casi termina — pedilo antes de quedarte sin stock 🔄`,or:11,bc:'md',tags:['Urgencia']},
+      {text:`¿Ya reponés ${LP(b)}? Tu ${esp} lo agradece 💛`,or:12,bc:'md',tags:['Afecto']}
+    ],
+    cumple_mascota:[
+      {text:uM?`🎂 ¡Feliz cumple ${M('a tu mascota')}! Un regalo especial te espera`:`🎂 ¡Celebrá con tu ${esp}! Tiene un regalo especial`,or:20,bc:'hi',tags:['Cumpleaños','Emoción máxima',D(uM,'Nombre mascota ')]},
+      {text:uM?`${M('Tu mascota')} cumple años y Puppis quiere celebrar con ${vos} 🎉`:`Tu ${esp} está de festejo — y Puppis también 🎉`,or:18,bc:'hi',tags:['Emoción',D(uM,'Nombre mascota ')]},
+      {text:uM?`¡Hoy es el día de ${M('tu mejor amigo/a')}! 🐾 Puppis tiene una sorpresa`:`¡Hoy festeja tu ${esp}! Puppis se suma con algo especial 🎊`,or:17,bc:'hi',tags:['Sorpresa',D(uM,'Nombre mascota ')]},
+      {text:uM?`Un año más de amor con ${M('tu mascota')} 💛 ¿Ya viste su regalo?`:`Un año más juntos 💛 Puppis tiene algo para celebrarlo`,or:16,bc:'hi',tags:['Vínculo',D(uM,'Nombre mascota ')]},
+      {text:uM?`¡${M('Nombre')} cumple! 🎂 Mirá lo que Puppis preparó para festejar`:`¡Tu ${esp} cumple años! 🎂 Puppis se suma al festejo`,or:19,bc:'hi',tags:['Cumpleaños',D(uM,'Nombre mascota ')]}
+    ],
+    cumple_cliente:[
+      {text:uN?`🎁 ¡Feliz cumple, ${N('amigo/a')}! Puppis tiene un regalo para ${vos}`:`🎁 ¡Feliz cumpleaños! Puppis tiene un regalo especial para vos`,or:18,bc:'hi',tags:['Cumpleaños cliente',D(uN,'Nombre cliente ')]},
+      {text:uN?`${N('Hoy es tu día')} 🎂 y Puppis lo quiere celebrar con vos`:`¡Hoy es tu día! 🎂 Puppis lo quiere celebrar con vos`,or:16,bc:'hi',tags:['Emoción',D(uN,'Nombre cliente ')]},
+      {text:uN?`¡Feliz cumple, ${N('nombre')}! Un detalle de parte de Puppis 🐾`:`¡Feliz cumpleaños! Un detalle especial de parte de Puppis 🐾`,or:17,bc:'hi',tags:[D(uN,'Nombre cliente ')]},
+      {text:`🎉 En tu cumple, Puppis te regala algo que ${uM?M('tu mascota'):'tu '+esp} va a adorar`,or:15,bc:'hi',tags:['Cruce cumple+mascota',D(uM,'Nombre mascota '),D(uN,'Nombre cliente ')]},
+      {text:uN?`Tu mes favorito llegó, ${N('nombre')} 🎁 Un beneficio exclusivo para ${vos}`:`Tu mes especial llegó 🎁 Un beneficio exclusivo de cumpleaños`,or:14,bc:'hi',tags:[D(uN,'Nombre cliente ')]}
+    ],
+    relacionamiento:[
+      {text:uM?`💛 Porque ${M('tu mascota')} lo vale: un detalle especial de Puppis`:`💛 Porque tu ${esp} lo vale: un detalle especial`,or:13,bc:'md',tags:['Vínculo',D(uM,'Nombre mascota ')]},
+      {text:uM?`${M('Tu mascota')} es parte de la familia Puppis 🐾 Algo especial para celebrarlo`:`¡Tu ${esp} es parte de la familia Puppis! 🐾`,or:14,bc:'hi',tags:['Comunidad',D(uM,'Nombre mascota ')]},
+      {text:`💛 De Puppis para ${uM?M('tu mascota'):'tu '+esp} — porque los lazos importan`,or:12,bc:'md',tags:['Marca','Vínculo']},
+      {text:uM?`Un año más juntos, ${M('nombre')} 🐾 Gracias por elegir Puppis`:`Un año más juntos con tu ${esp} 🐾 Gracias por elegir Puppis`,or:11,bc:'md',tags:['Relacionamiento',D(uM,'Nombre mascota ')]},
+      {text:uM?`¿Sabías que ${M('tu mascota')} tiene un beneficio esperándolo/a? 🐾`:`¿Sabías que tu ${esp} tiene un beneficio esperándolo/a? 🐾`,or:13,bc:'hi',tags:['Curiosidad',D(uM,'Nombre mascota ')]}
+    ],
+    institucional:[
+      {text:`Acerca de tu compra en Puppis 📦`,or:25,bc:'hi',tags:['Transaccional','OR altísimo']},
+      {text:`Información importante sobre tu pedido 🐾`,or:22,bc:'hi',tags:['Transaccional','Claridad']},
+      {text:`Novedades en tu tienda Puppis 📢`,or:10,bc:'md',tags:['Institucional']},
+      {text:`${b} — te queremos contar algo importante`,or:9,bc:'md',tags:['Directo']},
+      {text:`Puppis te informa: ${b} 📋`,or:8,bc:'lo',tags:['Formal']}
+    ],
+    educacional:[
+      {text:uM?`¿Sabés qué necesita ${M('tu mascota')} para estar sano/a? 🐾`:`¿Sabés qué necesita tu ${esp} para estar sano/a? 🐾`,or:11,bc:'md',tags:['Pregunta','Curiosidad',D(uM,'Nombre mascota ')]},
+      {text:`${b}: lo que todo dueño de ${esp} debería saber 📚`,or:10,bc:'md',tags:['Educativo']},
+      {text:uM?`Guía para cuidar mejor a ${M('tu mascota')} 💡`:`Guía para cuidar mejor a tu ${esp} 💡`,or:9,bc:'md',tags:['Utilidad',D(uM,'Nombre mascota ')]},
+      {text:`${b}: consejos reales para ${esp}s sanos y felices 🐶`,or:10,bc:'md',tags:['Consejos']},
+      {text:uM?`Todo lo que ${M('tu mascota')} quiere que sepas sobre ${b}`:`Todo lo que tu ${esp} quiere que sepas sobre ${b} 🐾`,or:9,bc:'md',tags:['Curioso',D(uM,'Nombre mascota ')]}
+    ],
+    actualidad:[
+      {text:`🌐 ${b} y ${uM?M('tu mascota'):'tu '+esp} también lo siente 🐾`,or:12,bc:'md',tags:['Actualidad',D(uM,'Nombre mascota ')]},
+      {text:`En medio de ${b}, Puppis está con ${uM?M('tu mascota'):'tu '+esp} 💛`,or:11,bc:'md',tags:['Actualidad','Vínculo']},
+      {text:`${b}: lo que significa para ${uM?M('tu mascota'):'los que más querés'} 🐾`,or:12,bc:'md',tags:['Actualidad']},
+      {text:`Ante ${b}, seguimos cuidando a ${uM?M('tu mascota'):'tu mascota'} con lo mejor 🌟`,or:11,bc:'md',tags:['Actualidad','Confianza']},
+      {text:`${b} cambió algo. Tu ${esp} lo siente — Puppis también 🐾`,or:10,bc:'md',tags:['Emocional']}
+    ]
+  };
+  return(t[tipo]||[]).map(x=>({...x,tags:x.tags.filter(Boolean)}));
+}
+
+// ── STATE ──────────────────────────────────────────────
+let ST={pais:'arg',mascota:'perro',tipo:'',beneficio:'',dyn:{mascota:true,nombre:false,carrito:false,nav:false,cumple:false,lastprod:false},selected:null,subjects:[],tab:'liquid'};
+
+document.querySelectorAll('#chips-mascota .chip').forEach(c=>{
+  c.addEventListener('click',()=>{
+    document.querySelectorAll('#chips-mascota .chip').forEach(x=>x.classList.remove('on'));
+    c.classList.add('on');ST.mascota=c.dataset.v;
+  });
+});
+function toggleDyn(el){el.classList.toggle('on');ST.dyn[el.dataset.key]=el.classList.contains('on')}
+function onPaisChange(){ST.pais=document.getElementById('sel-pais').value}
+function onTipoChange(){
+  ST.tipo=document.getElementById('sel-tipo').value;
+  updateInsight();updateDynRows();
+  if(ST.tipo==='actualidad'){document.getElementById('lbl-beneficio').textContent='Tema de actualidad';document.getElementById('inp-beneficio').placeholder='Ej: Mundial, temporada de lluvias, vacaciones…';}
+  else{document.getElementById('lbl-beneficio').textContent='Detalle / Beneficio principal';document.getElementById('inp-beneficio').placeholder='Ej: nueva línea de snacks, 3 cuotas sin interés con Galicia…';}
+}
+function updateDynRows(){
+  const t=ST.tipo||'';
+  document.getElementById('dyn-carrito-row').style.display=t==='remarketing_carrito'?'flex':'none';
+  document.getElementById('dyn-nav-row').style.display=t==='remarketing_nav'?'flex':'none';
+  document.getElementById('dyn-cumple-row').style.display=(t==='cumple_mascota'||t==='cumple_cliente')?'flex':'none';
+  document.getElementById('dyn-lastprod-row').style.display=t==='replenishment'?'flex':'none';
+}
+function updateInsight(){
+  const t=ST.tipo;const el=document.getElementById('insight-box');
+  if(!t||!KB[t]){el.innerHTML='<div class="insight-ttl">Benchmark del tipo</div><div class="im-row"><span>OR base dataset</span><span class="im-val warn">12.8%</span></div><div class="im-row"><span>CTR base dataset</span><span class="im-val warn">14.5%</span></div>';return;}
+  const k=KB[t];
+  const oc=k.or>12.8?'good':k.or>9?'warn':'bad';
+  const cc=k.ctr>14.5?'good':k.ctr>10?'warn':'bad';
+  el.innerHTML=`<div class="insight-ttl">${t.replace('_',' ')}</div>
+  <div class="im-row"><span>OR estimado</span><span class="im-val ${oc}">${k.or}%</span></div>
+  <div class="im-row"><span>CTR estimado</span><span class="im-val ${cc}">${k.ctr}%</span></div>
+  <div class="im-row" style="border:none;padding-top:6px"><span style="font-size:10px;color:var(--text-dim);line-height:1.4">${k.patron}</span></div>`;
+}
+
+// ── GENERATE ──────────────────────────────────────────
+async function generar(){
+  ST.tipo=document.getElementById('sel-tipo').value;
+  ST.pais=document.getElementById('sel-pais').value;
+  ST.beneficio=document.getElementById('inp-beneficio').value.trim();
+  ST.mascota=document.querySelector('#chips-mascota .chip.on')?.dataset.v||'perro';
+  if(!ST.tipo){document.getElementById('sel-tipo').focus();return;}
+  document.getElementById('el-empty').style.display='none';
+  document.getElementById('el-results').style.display='none';
+  document.getElementById('el-loading').classList.add('on');
+  document.getElementById('loading-msg').textContent=ST.tipo==='actualidad'?'Buscando contexto en la web…':'Analizando patrones de campañas…';
+  if(ST.tipo==='actualidad'){document.getElementById('el-search-notice').classList.add('on');document.getElementById('search-notice-text').textContent=`Contexto: "${ST.beneficio||'tema de actualidad'}" — personalizando asuntos`;}
+  setTimeout(renderResults,ST.tipo==='actualidad'?1800:900);
+}
+
+function renderResults(){
+  document.getElementById('el-loading').classList.remove('on');
+  const k=KB[ST.tipo];
+  const templates=getTemplates(ST.tipo,ST.pais,ST.mascota,ST.dyn,ST.beneficio);
+  ST.subjects=templates;ST.selected=null;
+  document.getElementById('st-label').textContent=`Estrategia · ${ST.tipo.replace('_',' ')}`;
+  document.getElementById('st-desc').textContent=k.est;
+  document.getElementById('st-tags').innerHTML=k.tags.map(t=>`<span class="st-tag ${k.hl.includes(t)?'hl':''}">${t}</span>`).join('');
+  document.getElementById('el-strategy').classList.add('on');
+  document.getElementById('or-val').textContent=k.or+'%';
+  setTimeout(()=>{document.getElementById('or-fill').style.width=Math.min(k.or/25*100,100)+'%'},100);
+  const grid=document.getElementById('subjects-grid');grid.innerHTML='';
+  document.getElementById('el-output').classList.remove('on');
+  templates.forEach((s,i)=>{
+    const d=document.createElement('div');d.className='scard';d.dataset.i=i;
+    d.innerHTML=`<div class="sc-top"><div class="sc-num">${i+1}</div><div class="sc-text">${s.text}</div></div><div class="sc-tags"><span class="badge ${s.bc}">OR ~${s.or}%</span>${s.tags.map(tg=>`<span class="badge ${tg&&tg.includes('🔀')?'dyn':''}">${tg}</span>`).join('')}</div>`;
+    d.addEventListener('click',()=>selectSubject(i));
+    grid.appendChild(d);
+  });
+  document.getElementById('el-results').style.display='flex';
+  if(ST.tipo==='actualidad')setTimeout(()=>document.getElementById('el-search-notice').classList.remove('on'),3000);
+}
+
+function selectSubject(i){
+  document.querySelectorAll('.scard').forEach(c=>c.classList.remove('sel'));
+  document.querySelector(`.scard[data-i="${i}"]`).classList.add('sel');
+  ST.selected=i;
+  const s=ST.subjects[i];
+  const liquid=makeLiquid(s.text,ST.tipo,ST.pais,ST.mascota,ST.dyn);
+  document.getElementById('code-liquid').innerHTML=liquid
+    .replace(/(\{%-?\s*(?:if|else|elsif|endif)[^%]*?-?%\})/g,'<span class="kw">$1</span>')
+    .replace(/(\{\{[^}]+\}\})/g,'<span class="vr">$1</span>');
+  const pre=makePreheader(ST.tipo,ST.pais,ST.beneficio);
+  document.getElementById('pre-text').textContent=pre;
+  const cc=document.getElementById('char-c');cc.textContent=`${pre.length} / 150 caracteres`;cc.className='char-c'+(pre.length>130?' warn':'');
+  const fg=document.getElementById('fields-grid');
+  fg.innerHTML=Object.entries(FIELDS[ST.pais]).map(([l,v])=>`<div class="field-pill" onclick="copyRaw('${v}',this)" title="Clic para copiar"><div class="fp-label">${l}</div>${v}</div>`).join('');
+  document.getElementById('tips-list').innerHTML=KB[ST.tipo].tips.map(t=>`<div class="tip-item">${t}</div>`).join('');
+  document.getElementById('el-output').classList.add('on');
+  document.getElementById('el-output').scrollIntoView({behavior:'smooth',block:'nearest'});
+}
+
+function switchTab(tab,el){
+  document.querySelectorAll('.otab').forEach(t=>t.classList.remove('on'));el.classList.add('on');
+  document.querySelectorAll('.out-pane').forEach(p=>p.classList.remove('on'));
+  document.getElementById('pane-'+tab).classList.add('on');
+}
+function doCopy(elId,btn){
+  navigator.clipboard.writeText(document.getElementById(elId).textContent).then(()=>{btn.textContent='✅ Copiado';btn.classList.add('ok');setTimeout(()=>{btn.innerHTML='📋 Copiar';btn.classList.remove('ok')},2000)});
+}
+function copyRaw(text,el){
+  navigator.clipboard.writeText(text).then(()=>{const o=el.style.borderColor;el.style.borderColor='var(--green)';el.style.color='var(--green)';setTimeout(()=>{el.style.borderColor='';el.style.color=''},1500)});
+}
+</script>
+</body>
+</html>
