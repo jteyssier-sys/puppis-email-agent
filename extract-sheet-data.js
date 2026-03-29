@@ -10,7 +10,7 @@ const fs = require('fs');
 const path = require('path');
 
 const SHEET_ID    = '1Hnoh8JfEup2avyFs0jCQZfgOtIH22rebi2w6EDOogQo';
-const SHEET_TAB   = 'promos';
+const SHEET_TAB   = 'Marzo + Abril';
 const DRIVE_FOLDER_ID = '12MphbEbTzKruIjamqpBj_gY8CeeVycZ5';
 const CREDS_PATH  = path.join(__dirname, 'credentials.json');
 const IMG_DIR     = path.join(__dirname, 'tmp_images');
