@@ -9,14 +9,19 @@ const { google } = require('googleapis');
 const fs = require('fs');
 const path = require('path');
 
-const SHEET_ID    = '1Hnoh8JfEup2avyFs0jCQZfgOtIH22rebi2w6EDOogQo';
-const SHEET_TAB   = 'Promos';
+const SHEET_ID        = '1Hnoh8JfEup2avyFs0jCQZfgOtIH22rebi2w6EDOogQo';
+const SHEET_TAB       = 'Promos';
 const DRIVE_FOLDER_ID = '12MphbEbTzKruIjamqpBj_gY8CeeVycZ5';
-const CREDS_PATH  = path.join(__dirname, 'credentials.json');
-const IMG_DIR     = path.join(__dirname, 'tmp_images');
+const CREDS_PATH      = path.join(__dirname, 'credentials.json');
+
+// Búsqueda flexible de columna (ignora mayúsculas, acentos, saltos de línea)
+function idx(headers, col) {
+  const norm = s => s.toLowerCase().replace(/\n/g, ' ').replace(/\s+/g, ' ').trim();
+  const target = norm(col);
+  return headers.findIndex(h => norm(h) === target || norm(h).startsWith(target));
+}
 
 async function main() {
-  // Auth
   const auth = new google.auth.GoogleAuth({
     keyFile: CREDS_PATH,
     scopes: [
@@ -34,72 +39,77 @@ async function main() {
   });
 
   const [headers, ...rows] = resp.data.values;
-  const idx = (col) => headers.findIndex(h => h.trim().toLowerCase() === col.toLowerCase());
+  console.log('📋 Columnas detectadas:', headers.map((h, i) => `${i}:${h.replace(/\n/g,' ')}`).join(' | '));
 
-  const idxBoletin   = idx('incluir_boletin');
-  const idxSeccion   = idx('Sección');
-  const idxSKU       = idx('SKU');
-  const idxSKURegalo = idx('SKU regalo');
-  const idxDesc      = idx('Descripcion');
-  const idxDescMkt   = idx('Descripcion Marketing');
+  const iSKU       = idx(headers, 'SKU');
+  const iMarca     = idx(headers, 'Marca');
+  const iAnimal    = idx(headers, 'Animal');
+  const iDesc      = idx(headers, 'Descripcion');
+  const iDescMkt   = idx(headers, 'Descripcion Marketing');
+  const iBoletin   = idx(headers, 'incluir_boletin');
+  const iPromoTipo = idx(headers, 'COMUNICACIÓN');       // "COMUNICACIÓN\nPC..."
+  const iSKURegalo = idx(headers, 'SKU Producto de Regalo');
+  const iDescReg   = idx(headers, 'Descripcion');        // descripcion regalo col 18
+  const iCantReg   = idx(headers, 'Cantidad de regalo');
 
-  if (idxBoletin === -1) {
-    console.error('Columna "incluir_boletin" no encontrada. Columnas disponibles:', headers);
+  if (iBoletin === -1) {
+    console.error('❌ Columna "incluir_boletin" no encontrada.');
     process.exit(1);
   }
 
-  // Filtrar filas activas
+  // ── 2. Filtrar y mapear ────────────────────────────────────────────────────
   const promos = rows
-    .filter(r => (r[idxBoletin] || '').trim().toUpperCase() === 'SI')
-    .map(r => ({
-      seccion:     (r[idxSeccion]   || '').trim(),
-      sku:         (r[idxSKU]       || '').trim(),
-      skuRegalo:   (r[idxSKURegalo] || '').trim(),
-      descripcion: (r[idxDesc]      || '').trim(),
-      descMkt:     (r[idxDescMkt]   || '').trim(),
-      rowData:     r,
-    }))
+    .filter(r => (r[iBoletin] || '').trim().toUpperCase() === 'SI')
+    .map(r => {
+      const promoTipo  = (r[iPromoTipo]  || '').trim();
+      const skuRegalo  = (r[iSKURegalo]  || '').trim();
+      const descRegalo = (r[18]          || '').trim(); // col fija índice 18
+      const cantRegalo = (r[iCantReg]    || '').trim();
+      const descripcion = (r[iDesc]      || '').trim();
+      const descMktExist = (r[iDescMkt]  || '').trim();
+
+      return {
+        seccion:     (r[iMarca]  || '').trim(),
+        animal:      (r[iAnimal] || '').trim(),
+        sku:         (r[iSKU]    || '').trim(),
+        skuRegalo,
+        descripcion,
+        promoTipo,
+        descRegalo,
+        cantRegalo,
+        descMkt: descMktExist || generarCopyPuppis(descripcion, promoTipo, descRegalo, cantRegalo),
+      };
+    })
     .filter(p => p.sku);
 
-  console.log(`✅ ${promos.length} promos encontradas con incluir_boletin=SI`);
+  console.log(`\n✅ ${promos.length} promos con incluir_boletin=SI`);
 
-  // ── 2. Agrupar por sección ────────────────────────────────────────────────
+  // ── 3. Agrupar por Marca (Sección) ────────────────────────────────────────
   const secciones = {};
   for (const p of promos) {
-    if (!secciones[p.seccion]) secciones[p.seccion] = [];
-    secciones[p.seccion].push(p);
+    const key = p.seccion || 'Sin sección';
+    if (!secciones[key]) secciones[key] = [];
+    secciones[key].push(p);
   }
 
-  console.log('📂 Secciones:', Object.keys(secciones).join(', '));
+  const marcas = Object.keys(secciones).sort();
+  console.log(`📂 ${marcas.length} marcas: ${marcas.join(', ')}`);
 
-  // ── 3. Mejorar copy con tono Puppis ──────────────────────────────────────
-  // Genera copy estilo "COMPRANDO X... TE LLEVÁS Y"
-  for (const p of promos) {
-    if (!p.descMkt) {
-      p.descMkt = generarCopyPuppis(p);
-    }
-  }
-
-  // ── 4. Descargar imágenes de Drive ───────────────────────────────────────
+  // ── 4. Buscar imágenes en Drive ───────────────────────────────────────────
   const drive = google.drive({ version: 'v3', auth: authClient });
 
-  if (!fs.existsSync(IMG_DIR)) fs.mkdirSync(IMG_DIR);
-
-  // Listar todos los JPG de la carpeta
   const filesResp = await drive.files.list({
     q: `'${DRIVE_FOLDER_ID}' in parents and mimeType contains 'image/' and trashed=false`,
     fields: 'files(id, name)',
-    pageSize: 200,
+    pageSize: 500,
   });
 
   const driveFiles = filesResp.data.files || [];
   console.log(`🖼️  ${driveFiles.length} imágenes en Drive`);
 
-  // Mapear nombre → id
   const fileMap = {};
   for (const f of driveFiles) fileMap[f.name.toLowerCase()] = f.id;
 
-  // Descargar imágenes relevantes y generar URLs de descarga públicas
   const skusNecesarios = new Set();
   for (const p of promos) {
     if (p.sku)       skusNecesarios.add(p.sku);
@@ -107,45 +117,56 @@ async function main() {
   }
 
   const imagenes = {};
+  let encontradas = 0;
   for (const sku of skusNecesarios) {
-    const filename = `${sku}.jpg`.toLowerCase();
-    const fileId = fileMap[filename];
-    if (!fileId) {
-      console.warn(`⚠️  No se encontró imagen para SKU: ${sku}`);
-      continue;
+    const fileId = fileMap[`${sku}.jpg`] || fileMap[`${sku}.jpeg`] || fileMap[`${sku}.png`];
+    if (fileId) {
+      imagenes[sku] = `https://drive.google.com/uc?export=download&id=${fileId}`;
+      encontradas++;
     }
-    // URL de descarga directa (válida para service account con acceso)
-    imagenes[sku] = `https://drive.google.com/uc?export=download&id=${fileId}`;
-    console.log(`  ✔ ${sku} → ${fileId}`);
   }
+  console.log(`  ✔ ${encontradas}/${skusNecesarios.size} imágenes encontradas`);
 
-  // ── 5. Output final ───────────────────────────────────────────────────────
-  const output = {
-    generatedAt: new Date().toISOString(),
-    mes: obtenerMesActual(),
-    totalPromos: promos.length,
-    secciones,
-    imagenes,
-    headers,
-  };
+  // ── 5. Output ─────────────────────────────────────────────────────────────
+  const output = { generatedAt: new Date().toISOString(), mes: obtenerMes(), totalPromos: promos.length, secciones, imagenes };
 
   const outPath = path.join(__dirname, 'boletin-data.json');
   fs.writeFileSync(outPath, JSON.stringify(output, null, 2), 'utf8');
-  console.log(`\n📄 Datos guardados en: ${outPath}`);
-  console.log(JSON.stringify(output, null, 2));
-}
+  console.log(`\n📄 Guardado en: ${outPath}`);
 
-function generarCopyPuppis(promo) {
-  const desc = promo.descripcion || promo.sku;
-  if (promo.skuRegalo) {
-    return `COMPRANDO ${desc.toUpperCase()}... ¡TE LLEVÁS ${promo.skuRegalo} DE REGALO!`;
+  // Resumen por sección
+  console.log('\n=== RESUMEN POR MARCA ===');
+  for (const [marca, items] of Object.entries(secciones).sort()) {
+    console.log(`  ${marca}: ${items.length} promos`);
   }
-  return `¡APROVECHÁ ESTA PROMO ESPECIAL EN ${desc.toUpperCase()}!`;
 }
 
-function obtenerMesActual() {
-  const meses = ['Enero','Febrero','Marzo','Abril','Mayo','Junio',
-                 'Julio','Agosto','Septiembre','Octubre','Noviembre','Diciembre'];
+function generarCopyPuppis(desc, tipo, descReg, cant) {
+  const D = desc.toUpperCase();
+  const t = tipo.toUpperCase();
+
+  if (t === 'REGALO' && descReg) {
+    const qty = cant ? `x${cant} ` : '';
+    return `COMPRANDO ${D}... ¡TE LLEVÁS ${qty}${descReg.toUpperCase()} DE REGALO!`;
+  }
+  if (t === '4X3')  return `COMPRANDO ${D}... ¡TE LLEVÁS 4 AL PRECIO DE 3!`;
+  if (t === '3X2')  return `COMPRANDO ${D}... ¡TE LLEVÁS 3 AL PRECIO DE 2!`;
+  if (t === '6X5')  return `COMPRANDO ${D}... ¡TE LLEVÁS 6 AL PRECIO DE 5!`;
+  if (t === '3X2' || t === '3x2') return `COMPRANDO ${D}... ¡TE LLEVÁS 3 AL PRECIO DE 2!`;
+
+  const match2da = t.match(/(\d+)%\s*2DA\s*U/i);
+  if (match2da) return `COMPRANDO ${D}... ¡LA SEGUNDA UNIDAD ${match2da[1]}% OFF!`;
+
+  const match35 = t.match(/^(\d+)%/);
+  if (match35) return `¡${match35[1]}% DE DESCUENTO EN ${D}!`;
+
+  if (t === 'LIQUIDACIÓN' || t === 'PC') return `¡APROVECHÁ ESTA PROMO ESPECIAL EN ${D}!`;
+
+  return `¡APROVECHÁ ESTA PROMO ESPECIAL EN ${D}!`;
+}
+
+function obtenerMes() {
+  const meses = ['Enero','Febrero','Marzo','Abril','Mayo','Junio','Julio','Agosto','Septiembre','Octubre','Noviembre','Diciembre'];
   const d = new Date();
   return `${meses[d.getMonth()]} ${d.getFullYear()}`;
 }
