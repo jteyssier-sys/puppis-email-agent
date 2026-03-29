@@ -30,7 +30,7 @@ async function main() {
   const sheets = google.sheets({ version: 'v4', auth: authClient });
   const resp = await sheets.spreadsheets.values.get({
     spreadsheetId: SHEET_ID,
-    range: `${SHEET_TAB}`,
+    range: `'${SHEET_TAB}'`,
   });
 
   const [headers, ...rows] = resp.data.values;
