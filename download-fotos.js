@@ -20,7 +20,7 @@ const path  = require('path');
 const FOTOS_SHEET_ID  = '1e-roi2WbOFnV4dap96PZbUbOJoaoRpdzWH3XNRNjcWw';
 const FOTOS_TAB       = 'Fotoss';   // ← nombre exacto de la pestaña
 const COL_SKU         = 1;          // columna B (0-indexed)
-const COL_URL         = -1;         // -1 = autodetectar columna con URLs http
+const COL_URL         = 3;          // columna D (0-indexed)
 
 const PROMOS_SHEET_ID = '1Hnoh8JfEup2avyFs0jCQZfgOtIH22rebi2w6EDOogQo';
 const PROMOS_TAB      = 'Promos';
@@ -43,9 +43,20 @@ function fetchBuffer(url, redirects = 5) {
   return new Promise((resolve, reject) => {
     if (redirects === 0) return reject(new Error('Demasiadas redirecciones'));
     const lib = url.startsWith('https') ? https : http;
-    lib.get(url, { timeout: 15000 }, res => {
+    const opts = {
+      timeout: 20000,
+      headers: {
+        'User-Agent': 'Mozilla/5.0 (Macintosh; Intel Mac OS X 10_15_7) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/120.0.0.0 Safari/537.36',
+        'Accept': 'image/webp,image/apng,image/*,*/*;q=0.8',
+        'Referer': 'https://www.puppis.com.ar/',
+      },
+    };
+    lib.get(url, opts, res => {
       if ([301, 302, 303, 307, 308].includes(res.statusCode)) {
-        return resolve(fetchBuffer(res.headers.location, redirects - 1));
+        const loc = res.headers.location;
+        if (!loc) return reject(new Error('Redirect sin Location'));
+        const next = loc.startsWith('http') ? loc : `https://www.puppis.com.ar${loc}`;
+        return resolve(fetchBuffer(next, redirects - 1));
       }
       if (res.statusCode !== 200) return reject(new Error(`HTTP ${res.statusCode}`));
       const chunks = [];
