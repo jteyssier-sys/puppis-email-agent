@@ -242,6 +242,7 @@ async function main() {
         err++;
         errores.push(`SKU ${sku}: ${e.message}`);
         process.stdout.write(`\r   ✔ ${ok + err}/${pendientes.length}  (${ok} ok, ${err} err)   `);
+        if (err <= 5) console.error(`\n   ❌ SKU ${sku} | URL: ${url.slice(0,80)} | ERROR: ${e.message}`);
       }
     }));
 
