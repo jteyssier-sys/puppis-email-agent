@@ -173,6 +173,8 @@ async function main() {
       fields: 'nextPageToken, files(name)',
       pageSize: 1000,
       pageToken,
+      supportsAllDrives: true,
+      includeItemsFromAllDrives: true,
     });
     for (const f of res.data.files || []) existentes.add(f.name.toLowerCase());
     pageToken = res.data.nextPageToken;
@@ -234,6 +236,7 @@ async function main() {
             body:     Readable.from(buffer),
           },
           fields: 'id',
+          supportsAllDrives: true,
         });
 
         ok++;
