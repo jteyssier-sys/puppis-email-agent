@@ -25,7 +25,7 @@ const COL_URL         = 3;          // columna D (0-indexed)
 const PROMOS_SHEET_ID = '1Hnoh8JfEup2avyFs0jCQZfgOtIH22rebi2w6EDOogQo';
 const PROMOS_TAB      = 'Promos';
 
-const DRIVE_FOLDER_ID = '12MphbEbTzKruIjamqpBj_gY8CeeVycZ5';
+const DRIVE_FOLDER_ID = '1y--6gcZKBgtGurmp1OhziurRYp4hjSTs';
 const CREDS_PATH      = path.join(__dirname, 'credentials.json');
 
 const CONCURRENCIA    = 5;   // descargas simultáneas
