@@ -20,7 +20,7 @@ const path  = require('path');
 const FOTOS_SHEET_ID  = '1e-roi2WbOFnV4dap96PZbUbOJoaoRpdzWH3XNRNjcWw';
 const FOTOS_TAB       = 'Fotoss';   // ← nombre exacto de la pestaña
 const COL_SKU         = 1;          // columna B (0-indexed)
-const COL_URL         = 3;          // columna D (0-indexed)
+const COL_URL         = -1;         // -1 = autodetectar columna con URLs http
 
 const PROMOS_SHEET_ID = '1Hnoh8JfEup2avyFs0jCQZfgOtIH22rebi2w6EDOogQo';
 const PROMOS_TAB      = 'Promos';
@@ -34,6 +34,7 @@ const PAUSA_MS        = 300; // ms entre lotes
 // ── Args ──────────────────────────────────────────────────────────────────────
 const MODO_TODOS  = process.argv.includes('--todos');
 const DRY_RUN     = process.argv.includes('--dry-run');
+const DEBUG       = process.argv.includes('--debug');
 
 // ── Helpers ───────────────────────────────────────────────────────────────────
 function sleep(ms) { return new Promise(r => setTimeout(r, ms)); }
@@ -87,14 +88,38 @@ async function main() {
   });
 
   const fotasRows = fotosResp.data.values || [];
+  const headers   = fotasRows[0] || [];
+
+  // Autodetectar columna de URL si no está configurada
+  let colUrl = COL_URL;
+  if (colUrl === -1) {
+    // Buscar columna que contenga URLs en las primeras 10 filas de datos
+    for (let c = 0; c < headers.length; c++) {
+      const sample = fotasRows.slice(1, 11).map(r => String(r[c] || ''));
+      const httpCount = sample.filter(v => v.includes('http') || v.startsWith('//')).length;
+      if (httpCount >= 3) { colUrl = c; break; }
+    }
+    console.log(`   Columna URL autodetectada: ${colUrl} (${headers[colUrl] || '?'}) — letra ${String.fromCharCode(65 + colUrl)}`);
+  }
+
+  if (DEBUG) {
+    console.log('\n🔍 DEBUG — primeras 5 filas:');
+    console.log('   Headers:', headers.map((h, i) => `[${i}]${h}`).join(' | '));
+    for (let i = 1; i <= 5 && i < fotasRows.length; i++) {
+      const r = fotasRows[i];
+      console.log(`   Fila ${i}: SKU=${r[COL_SKU]} | URL_col${colUrl}=${String(r[colUrl]||'').slice(0,60)}`);
+    }
+    console.log('');
+  }
+
   const mapaUrls  = {};
   for (let i = 1; i < fotasRows.length; i++) {
     const row = fotasRows[i];
     const sku = String(row[COL_SKU] || '').trim();
-    let   url = String(row[COL_URL] || '').trim();
+    let   url = String(row[colUrl]  || '').trim();
     if (!sku || !url) continue;
-    if (url.startsWith('//'))           url = 'https:' + url;
-    if (!url.startsWith('http'))        url = 'https://' + url;
+    if (url.startsWith('//'))    url = 'https:' + url;
+    if (!url.startsWith('http')) url = 'https://' + url;
     mapaUrls[sku] = url;
   }
   console.log(`   ${Object.keys(mapaUrls).length} SKUs con URL en el sheet\n`);
