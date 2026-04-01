@@ -98,15 +98,20 @@ async function main() {
   // ── 4. Buscar imágenes en Drive ───────────────────────────────────────────
   const drive = google.drive({ version: 'v3', auth: authClient });
 
-  const filesResp = await drive.files.list({
-    q: `'${DRIVE_FOLDER_ID}' in parents and mimeType contains 'image/' and trashed=false`,
-    fields: 'files(id, name)',
-    pageSize: 1000,
-    supportsAllDrives: true,
-    includeItemsFromAllDrives: true,
-  });
-
-  const driveFiles = filesResp.data.files || [];
+  const driveFiles = [];
+  let pageToken;
+  do {
+    const filesResp = await drive.files.list({
+      q: `'${DRIVE_FOLDER_ID}' in parents and mimeType contains 'image/' and trashed=false`,
+      fields: 'nextPageToken, files(id, name)',
+      pageSize: 1000,
+      supportsAllDrives: true,
+      includeItemsFromAllDrives: true,
+      pageToken,
+    });
+    driveFiles.push(...(filesResp.data.files || []));
+    pageToken = filesResp.data.nextPageToken;
+  } while (pageToken);
   console.log(`🖼️  ${driveFiles.length} imágenes en Drive`);
 
   const fileMap = {};
@@ -123,7 +128,7 @@ async function main() {
   for (const sku of skusNecesarios) {
     const fileId = fileMap[`${sku}.jpg`] || fileMap[`${sku}.jpeg`] || fileMap[`${sku}.png`];
     if (fileId) {
-      imagenes[sku] = `https://drive.google.com/uc?export=download&id=${fileId}`;
+      imagenes[sku] = `https://lh3.googleusercontent.com/d/${fileId}`;
       encontradas++;
     }
   }
