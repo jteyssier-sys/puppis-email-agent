@@ -101,7 +101,9 @@ async function main() {
   const filesResp = await drive.files.list({
     q: `'${DRIVE_FOLDER_ID}' in parents and mimeType contains 'image/' and trashed=false`,
     fields: 'files(id, name)',
-    pageSize: 500,
+    pageSize: 1000,
+    supportsAllDrives: true,
+    includeItemsFromAllDrives: true,
   });
 
   const driveFiles = filesResp.data.files || [];
