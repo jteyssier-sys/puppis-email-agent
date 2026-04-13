@@ -1,0 +1,19 @@
+{
+  "name": "puppis-email-agent",
+  "version": "1.0.0",
+  "description": "Agente inteligente de asuntos de email para campañas de Puppis.",
+  "main": "extract-sheet-data.js",
+  "scripts": {
+    "test": "echo \"Error: no test specified\" && exit 1"
+  },
+  "repository": {
+    "type": "git",
+    "url": "http://local_proxy@127.0.0.1:39937/git/jteyssier-sys/puppis-email-agent"
+  },
+  "keywords": [],
+  "author": "",
+  "license": "ISC",
+  "dependencies": {
+    "googleapis": "^171.4.0"
+  }
+}
